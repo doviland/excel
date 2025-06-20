@@ -3,364 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Analytics Clienti - Grafici Interattivi</title>
+    <title>Dashboard Analytics Clienti</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
     <style>
         .chart-container {
-            position: relative;
             height: 400px;
-            margin: 20px 0;
+            position: relative;
         }
         .kpi-card {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: transform 0.3s ease;
         }
-        .kpi-card:hover {
-            transform: translateY(-5px);
-        }
-        .client-card {
-            border-left: 4px solid;
-            transition: all 0.3s ease;
-        }
-        .client-card:hover {
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 2s linear infinite;
-            margin: 20px auto;
+            animation: spin 1s linear infinite;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-100 min-h-screen">
     <!-- Header -->
     <header class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-6">
-                <div class="flex items-center">
-                    <i class="fas fa-chart-pie text-3xl text-blue-600 mr-3"></i>
-                    <h1 class="text-3xl font-bold text-gray-900">Dashboard Analytics Clienti</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="text-sm text-gray-500">
-                        <i class="fas fa-sync-alt mr-1"></i>
-                        Ultimo aggiornamento: <span id="lastUpdate">Caricamento...</span>
-                    </div>
-                    <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">
-                        <i class="fas fa-refresh mr-2"></i>Aggiorna
-                    </button>
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-3xl font-bold text-gray-800">
+                    <i class="fas fa-chart-pie mr-2 text-blue-600"></i>
+                    Dashboard Analytics Clienti
+                </h1>
+                <div class="flex items-center text-sm text-gray-600">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    <span id="lastUpdate">Caricamento...</span>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="loading-spinner"></div>
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg text-center">
+            <div class="loading mb-4"></div>
+            <p class="text-gray-700">Caricamento dati...</p>
+        </div>
+    </div>
 
-    <!-- Main Content -->
-    <main id="mainContent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style="display: none;">
-        
-        <!-- KPI Overview -->
-        <section class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">Panoramica KPI</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="kpi-card p-6 rounded-lg text-white">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm opacity-80">Budget Totale</p>
-                            <p id="totalBudget" class="text-2xl font-bold">€0</p>
-                        </div>
-                        <i class="fas fa-euro-sign text-3xl opacity-80"></i>
-                    </div>
-                </div>
-                <div class="kpi-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm opacity-80">Clic Totali</p>
-                            <p id="totalClicks" class="text-2xl font-bold">0</p>
-                        </div>
-                        <i class="fas fa-mouse-pointer text-3xl opacity-80"></i>
-                    </div>
-                </div>
-                <div class="kpi-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm opacity-80">Impressioni Totali</p>
-                            <p id="totalImpressions" class="text-2xl font-bold">0</p>
-                        </div>
-                        <i class="fas fa-eye text-3xl opacity-80"></i>
-                    </div>
-                </div>
-                <div class="kpi-card p-6 rounded-lg text-white" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm opacity-80">Conversioni Totali</p>
-                            <p id="totalConversions" class="text-2xl font-bold">0</p>
-                        </div>
-                        <i class="fas fa-bullseye text-3xl opacity-80"></i>
+    <!-- KPI Dashboard -->
+    <div class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="kpi-card text-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-euro-sign text-3xl mr-4"></i>
+                    <div>
+                        <p class="text-sm opacity-75">Budget Totale</p>
+                        <p class="text-2xl font-bold" id="totalBudget">€0</p>
                     </div>
                 </div>
             </div>
-        </section>
-
-        <!-- Filters -->
-        <section class="mb-8">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h3 class="text-lg font-semibold mb-4">Filtri</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <select id="clientFilter" class="border border-gray-300 rounded-lg px-3 py-2">
-                        <option value="">Tutti i clienti</option>
-                    </select>
-                    <select id="campaignFilter" class="border border-gray-300 rounded-lg px-3 py-2">
-                        <option value="">Tutti i tipi di campagna</option>
-                    </select>
-                    <input type="date" id="dateFilter" class="border border-gray-300 rounded-lg px-3 py-2">
+            <div class="bg-green-500 text-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-mouse-pointer text-3xl mr-4"></i>
+                    <div>
+                        <p class="text-sm opacity-75">Clic Totali</p>
+                        <p class="text-2xl font-bold" id="totalClicks">0</p>
+                    </div>
                 </div>
             </div>
-        </section>
-
-        <!-- Charts Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Budget Distribution Pie Chart -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h3 class="text-lg font-semibold mb-4">
-                    <i class="fas fa-chart-pie mr-2 text-blue-600"></i>
-                    Distribuzione Budget per Cliente
-                </h3>
-                <div class="chart-container">
-                    <canvas id="budgetPieChart"></canvas>
+            <div class="bg-yellow-500 text-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-eye text-3xl mr-4"></i>
+                    <div>
+                        <p class="text-sm opacity-75">Impressioni Totali</p>
+                        <p class="text-2xl font-bold" id="totalImpressions">0</p>
+                    </div>
                 </div>
             </div>
-
-            <!-- Clicks vs Impressions Bar Chart -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h3 class="text-lg font-semibold mb-4">
-                    <i class="fas fa-chart-bar mr-2 text-green-600"></i>
-                    Clic vs Impressioni per Cliente
-                </h3>
-                <div class="chart-container">
-                    <canvas id="clicksImpressionsChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Performance Timeline -->
-            <div class="bg-white p-6 rounded-lg shadow lg:col-span-2">
-                <h3 class="text-lg font-semibold mb-4">
-                    <i class="fas fa-chart-line mr-2 text-purple-600"></i>
-                    Performance nel Tempo
-                </h3>
-                <div class="chart-container">
-                    <canvas id="timelineChart"></canvas>
+            <div class="bg-red-500 text-white p-6 rounded-lg shadow-lg">
+                <div class="flex items-center">
+                    <i class="fas fa-bullseye text-3xl mr-4"></i>
+                    <div>
+                        <p class="text-sm opacity-75">Conversioni Totali</p>
+                        <p class="text-2xl font-bold" id="totalConversions">0</p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Client Details -->
-        <section class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">Dettagli per Cliente</h2>
-            <div id="clientDetails" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Client cards will be inserted here -->
-            </div>
-        </section>
-
-        <!-- Campaign Performance Comparison -->
-        <section class="mb-8">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h3 class="text-lg font-semibold mb-4">
-                    <i class="fas fa-balance-scale mr-2 text-red-600"></i>
-                    Confronto Performance Campagne
-                </h3>
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Budget per Cliente -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-euro-sign mr-2 text-blue-600"></i>
+                    Budget per Cliente
+                </h2>
                 <div class="chart-container">
-                    <canvas id="campaignComparisonChart"></canvas>
+                    <canvas id="budgetChart"></canvas>
                 </div>
             </div>
-        </section>
-    </main>
+
+            <!-- Clic per Cliente -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-mouse-pointer mr-2 text-green-600"></i>
+                    Clic per Cliente
+                </h2>
+                <div class="chart-container">
+                    <canvas id="clicksChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Impressioni per Cliente -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-eye mr-2 text-yellow-600"></i>
+                    Impressioni per Cliente
+                </h2>
+                <div class="chart-container">
+                    <canvas id="impressionsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Confronto Performance -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-chart-bar mr-2 text-purple-600"></i>
+                    Confronto Performance
+                </h2>
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabella Dettagli -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">
+                <i class="fas fa-table mr-2 text-indigo-600"></i>
+                Dettagli per Cliente
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left font-semibold text-gray-700">Cliente</th>
+                            <th class="px-4 py-2 text-right font-semibold text-gray-700">Budget</th>
+                            <th class="px-4 py-2 text-right font-semibold text-gray-700">Clic</th>
+                            <th class="px-4 py-2 text-right font-semibold text-gray-700">Impressioni</th>
+                            <th class="px-4 py-2 text-right font-semibold text-gray-700">CPC Medio</th>
+                            <th class="px-4 py-2 text-right font-semibold text-gray-700">Conversioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientTable">
+                        <!-- Popolato dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // Global variables
-        let allData = [];
+        const SHEETS_URL = 'https://docs.google.com/spreadsheets/d/1A95NlOG6CrOuNWXjLGn7w4UfCz71Y-gw0vjqyqJqnbU/export?format=csv&gid=0';
+        
         let charts = {};
+        let clientData = {};
+
+        // Colori per i clienti
         const clientColors = {
-            'Ciclone srl': '#FF6384',
-            'SFS Italia': '#36A2EB',
-            'ASA PLASTICI S.R.L': '#FFCE56',
-            'CMS Nordest': '#4BC0C0'
+            'Ciclone srl': '#3B82F6',
+            'SFS Italia': '#10B981',
+            'ASA PLASTICI S.R.L': '#F59E0B',
+            'CMS Nordest': '#EF4444'
         };
 
-        // Google Sheets configuration
-        const SHEET_ID = '1A95NlOG6CrOuNWXjLGn7w4UfCz71Y-gw0vjqyqJqnbU';
-        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
-
-        // Initialize the dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            loadData();
-            setupEventListeners();
+        // Funzione per parsare CSV
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            const result = [];
             
-            // Auto-refresh every 24 hours
-            setInterval(loadData, 24 * 60 * 60 * 1000);
-        });
-
-        function setupEventListeners() {
-            document.getElementById('refreshBtn').addEventListener('click', loadData);
-            document.getElementById('clientFilter').addEventListener('change', applyFilters);
-            document.getElementById('campaignFilter').addEventListener('change', applyFilters);
-            document.getElementById('dateFilter').addEventListener('change', applyFilters);
-        }
-
-        async function loadData() {
-            try {
-                document.getElementById('loadingSpinner').style.display = 'block';
-                document.getElementById('mainContent').style.display = 'none';
-
-                // For demo purposes, using sample data since direct CSV access might be restricted
-                const sampleData = [
-                    {
-                        campagna: 'IT | CANNONI NEBULIZZATORI',
-                        budgetSpeso: 156.80,
-                        clic: 117,
-                        impressioni: 1175,
-                        cpcMedio: 1.50,
-                        conversioni: 6,
-                        data: '2025-06-16',
-                        cliente: 'Ciclone srl'
-                    },
-                    {
-                        campagna: 'Performance Max | 2025 IT FR NL',
-                        budgetSpeso: 122.49,
-                        clic: 374,
-                        impressioni: 3416,
-                        cpcMedio: 0.45,
-                        conversioni: 8,
-                        data: '2025-06-16',
-                        cliente: 'ASA PLASTICI S.R.L'
-                    },
-                    {
-                        campagna: 'Search | Landing Page Rivetti',
-                        budgetSpeso: 160.94,
-                        clic: 82,
-                        impressioni: 1148,
-                        cpcMedio: 2.11,
-                        conversioni: 8,
-                        data: '2025-06-16',
-                        cliente: 'SFS Italia'
-                    },
-                    {
-                        campagna: 'Search FR | Sito istituzionale',
-                        budgetSpeso: 31.64,
-                        clic: 54,
-                        impressioni: 347,
-                        cpcMedio: 0.71,
-                        conversioni: 5,
-                        data: '2025-06-16',
-                        cliente: 'ASA PLASTICI S.R.L'
-                    },
-                    {
-                        campagna: 'Search Sito CMS',
-                        budgetSpeso: 27.76,
-                        clic: 40,
-                        impressioni: 966,
-                        cpcMedio: 0.69,
-                        conversioni: 3,
-                        data: '2025-06-16',
-                        cliente: 'CMS Nordest'
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // Parsing semplice CSV (gestisce virgole nei valori)
+                const row = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
                     }
-                ];
-
-                allData = sampleData;
-                
-                updateLastUpdateTime();
-                populateFilters();
-                updateKPIs();
-                createCharts();
-                createClientDetails();
-                
-                document.getElementById('loadingSpinner').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-                
-            } catch (error) {
-                console.error('Error loading data:', error);
-                alert('Errore nel caricamento dei dati. Riprova più tardi.');
+                }
+                row.push(current.trim());
+                result.push(row);
             }
+            
+            return result;
         }
 
-        function updateLastUpdateTime() {
-            const now = new Date();
-            document.getElementById('lastUpdate').textContent = now.toLocaleString('it-IT');
-        }
+        // Funzione per processare i dati
+        function processData(csvData) {
+            clientData = {
+                'Ciclone srl': { budget: 0, clicks: 0, impressions: 0, conversions: 0, cpcTotal: 0, cpcCount: 0 },
+                'SFS Italia': { budget: 0, clicks: 0, impressions: 0, conversions: 0, cpcTotal: 0, cpcCount: 0 },
+                'ASA PLASTICI S.R.L': { budget: 0, clicks: 0, impressions: 0, conversions: 0, cpcTotal: 0, cpcCount: 0 },
+                'CMS Nordest': { budget: 0, clicks: 0, impressions: 0, conversions: 0, cpcTotal: 0, cpcCount: 0 }
+            };
 
-        function populateFilters() {
-            const clients = [...new Set(allData.map(item => item.cliente))];
-            const campaigns = [...new Set(allData.map(item => item.campagna))];
-            
-            const clientFilter = document.getElementById('clientFilter');
-            const campaignFilter = document.getElementById('campaignFilter');
-            
-            clientFilter.innerHTML = '<option value="">Tutti i clienti</option>';
-            clients.forEach(client => {
-                clientFilter.innerHTML += `<option value="${client}">${client}</option>`;
+            // Processa ogni riga (salta intestazioni e righe vuote)
+            for (let i = 1; i < csvData.length; i++) {
+                const row = csvData[i];
+                if (row.length < 8) continue;
+
+                // Estrai il nome cliente dalla cella (ultima colonna non vuota)
+                let clientName = '';
+                for (let j = row.length - 1; j >= 0; j--) {
+                    if (row[j] && row[j].trim() && !row[j].includes('Aggiornato')) {
+                        clientName = row[j].trim();
+                        break;
+                    }
+                }
+
+                // Se il cliente non è nei nostri dati, continua
+                if (!clientData[clientName]) continue;
+
+                // Estrai i valori numerici
+                const budget = parseFloat(row[1]?.replace(',', '.')) || 0;
+                const clicks = parseInt(row[2]) || 0;
+                const impressions = parseInt(row[3]) || 0;
+                const cpc = parseFloat(row[4]?.replace(',', '.')) || 0;
+                const conversions = parseFloat(row[5]?.replace(',', '.')) || 0;
+
+                // Accumula i dati per cliente
+                if (budget > 0) clientData[clientName].budget += budget;
+                if (clicks > 0) clientData[clientName].clicks += clicks;
+                if (impressions > 0) clientData[clientName].impressions += impressions;
+                if (conversions > 0) clientData[clientName].conversions += conversions;
+                if (cpc > 0) {
+                    clientData[clientName].cpcTotal += cpc;
+                    clientData[clientName].cpcCount++;
+                }
+            }
+
+            // Calcola CPC medio
+            Object.keys(clientData).forEach(client => {
+                if (clientData[client].cpcCount > 0) {
+                    clientData[client].avgCpc = clientData[client].cpcTotal / clientData[client].cpcCount;
+                } else {
+                    clientData[client].avgCpc = 0;
+                }
             });
-            
-            campaignFilter.innerHTML = '<option value="">Tutti i tipi di campagna</option>';
-            campaigns.forEach(campaign => {
-                campaignFilter.innerHTML += `<option value="${campaign}">${campaign}</option>`;
-            });
         }
 
+        // Aggiorna KPI
         function updateKPIs() {
-            const totalBudget = allData.reduce((sum, item) => sum + item.budgetSpeso, 0);
-            const totalClicks = allData.reduce((sum, item) => sum + item.clic, 0);
-            const totalImpressions = allData.reduce((sum, item) => sum + item.impressioni, 0);
-            const totalConversions = allData.reduce((sum, item) => sum + item.conversioni, 0);
-            
-            document.getElementById('totalBudget').textContent = `€${totalBudget.toFixed(2)}`;
+            let totalBudget = 0, totalClicks = 0, totalImpressions = 0, totalConversions = 0;
+
+            Object.values(clientData).forEach(data => {
+                totalBudget += data.budget;
+                totalClicks += data.clicks;
+                totalImpressions += data.impressions;
+                totalConversions += data.conversions;
+            });
+
+            document.getElementById('totalBudget').textContent = '€' + totalBudget.toFixed(2);
             document.getElementById('totalClicks').textContent = totalClicks.toLocaleString();
             document.getElementById('totalImpressions').textContent = totalImpressions.toLocaleString();
-            document.getElementById('totalConversions').textContent = totalConversions.toLocaleString();
+            document.getElementById('totalConversions').textContent = totalConversions.toFixed(1);
         }
 
-        function createCharts() {
-            createBudgetPieChart();
-            createClicksImpressionsChart();
-            createTimelineChart();
-            createCampaignComparisonChart();
-        }
+        // Crea grafici a torta
+        function createPieChart(canvasId, title, dataKey) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            const labels = Object.keys(clientData);
+            const data = labels.map(client => clientData[client][dataKey]);
+            const colors = labels.map(client => clientColors[client]);
 
-        function createBudgetPieChart() {
-            const ctx = document.getElementById('budgetPieChart').getContext('2d');
-            
-            const budgetByClient = {};
-            allData.forEach(item => {
-                budgetByClient[item.cliente] = (budgetByClient[item.cliente] || 0) + item.budgetSpeso;
-            });
-            
-            if (charts.budgetPie) charts.budgetPie.destroy();
-            
-            charts.budgetPie = new Chart(ctx, {
+            if (charts[canvasId]) {
+                charts[canvasId].destroy();
+            }
+
+            charts[canvasId] = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: Object.keys(budgetByClient),
+                    labels: labels,
                     datasets: [{
-                        data: Object.values(budgetByClient),
-                        backgroundColor: Object.keys(budgetByClient).map(client => clientColors[client] || '#FF6384'),
+                        data: data,
+                        backgroundColor: colors,
                         borderWidth: 2,
                         borderColor: '#fff'
                     }]
@@ -375,7 +319,10 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    return `${context.label}: €${context.parsed.toFixed(2)}`;
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return context.label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
                                 }
                             }
                         }
@@ -384,100 +331,46 @@
             });
         }
 
-        function createClicksImpressionsChart() {
-            const ctx = document.getElementById('clicksImpressionsChart').getContext('2d');
+        // Crea grafico a barre
+        function createBarChart() {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
             
-            const dataByClient = {};
-            allData.forEach(item => {
-                if (!dataByClient[item.cliente]) {
-                    dataByClient[item.cliente] = { clicks: 0, impressions: 0 };
-                }
-                dataByClient[item.cliente].clicks += item.clic;
-                dataByClient[item.cliente].impressions += item.impressioni;
-            });
-            
-            if (charts.clicksImpressions) charts.clicksImpressions.destroy();
-            
-            charts.clicksImpressions = new Chart(ctx, {
+            const labels = Object.keys(clientData);
+            const budgetData = labels.map(client => clientData[client].budget);
+            const clicksData = labels.map(client => clientData[client].clicks);
+            const colors = labels.map(client => clientColors[client]);
+
+            if (charts['comparisonChart']) {
+                charts['comparisonChart'].destroy();
+            }
+
+            charts['comparisonChart'] = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(dataByClient),
-                    datasets: [{
-                        label: 'Clic',
-                        data: Object.values(dataByClient).map(d => d.clicks),
-                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }, {
-                        label: 'Impressioni',
-                        data: Object.values(dataByClient).map(d => d.impressions),
-                        backgroundColor: 'rgba(255, 99, 132, 0.8)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        function createTimelineChart() {
-            const ctx = document.getElementById('timelineChart').getContext('2d');
-            
-            const timelineData = {};
-            allData.forEach(item => {
-                if (!timelineData[item.data]) {
-                    timelineData[item.data] = { budget: 0, clicks: 0, impressions: 0 };
-                }
-                timelineData[item.data].budget += item.budgetSpeso;
-                timelineData[item.data].clicks += item.clic;
-                timelineData[item.data].impressions += item.impressioni;
-            });
-            
-            const sortedDates = Object.keys(timelineData).sort();
-            
-            if (charts.timeline) charts.timeline.destroy();
-            
-            charts.timeline = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: sortedDates,
-                    datasets: [{
-                        label: 'Budget Speso (€)',
-                        data: sortedDates.map(date => timelineData[date].budget),
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        yAxisID: 'y'
-                    }, {
-                        label: 'Clic',
-                        data: sortedDates.map(date => timelineData[date].clicks),
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        yAxisID: 'y1'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            title: {
-                                display: true,
-                                text: 'Data'
-                            }
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Budget (€)',
+                            data: budgetData,
+                            backgroundColor: colors.map(color => color + '80'),
+                            borderColor: colors,
+                            borderWidth: 2,
+                            yAxisID: 'y'
                         },
+                        {
+                            label: 'Clic',
+                            data: clicksData,
+                            backgroundColor: colors.map(color => color + '40'),
+                            borderColor: colors,
+                            borderWidth: 2,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
                         y: {
                             type: 'linear',
                             display: true,
@@ -499,180 +392,85 @@
                                 drawOnChartArea: false,
                             },
                         }
-                    }
-                }
-            });
-        }
-
-        function createCampaignComparisonChart() {
-            const ctx = document.getElementById('campaignComparisonChart').getContext('2d');
-            
-            const campaignData = {};
-            allData.forEach(item => {
-                const campaignType = item.campagna.split(' | ')[0] || item.campagna.split(' ')[0];
-                if (!campaignData[campaignType]) {
-                    campaignData[campaignType] = { budget: 0, conversions: 0 };
-                }
-                campaignData[campaignType].budget += item.budgetSpeso;
-                campaignData[campaignType].conversions += item.conversioni;
-            });
-            
-            if (charts.campaignComparison) charts.campaignComparison.destroy();
-            
-            charts.campaignComparison = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: Object.keys(campaignData),
-                    datasets: [{
-                        label: 'Budget Speso',
-                        data: Object.values(campaignData).map(d => d.budget),
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
-                    }, {
-                        label: 'Conversioni',
-                        data: Object.values(campaignData).map(d => d.conversions * 10), // Scaled for visibility
-                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                    },
                     plugins: {
                         legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    if (context.datasetIndex === 1) {
-                                        return `${context.dataset.label}: ${(context.parsed.r / 10).toFixed(0)}`;
-                                    }
-                                    return `${context.dataset.label}: €${context.parsed.r.toFixed(2)}`;
-                                }
-                            }
-                        }
-                    },
-                    elements: {
-                        line: {
-                            borderWidth: 3
+                            position: 'top'
                         }
                     }
                 }
             });
         }
 
-        function createClientDetails() {
-            const clientDetails = document.getElementById('clientDetails');
-            clientDetails.innerHTML = '';
-            
-            const clientData = {};
-            allData.forEach(item => {
-                if (!clientData[item.cliente]) {
-                    clientData[item.cliente] = {
-                        budget: 0,
-                        clicks: 0,
-                        impressions: 0,
-                        conversions: 0,
-                        campaigns: 0
-                    };
-                }
-                clientData[item.cliente].budget += item.budgetSpeso;
-                clientData[item.cliente].clicks += item.clic;
-                clientData[item.cliente].impressions += item.impressioni;
-                clientData[item.cliente].conversions += item.conversioni;
-                clientData[item.cliente].campaigns += 1;
-            });
-            
-            Object.entries(clientData).forEach(([client, data]) => {
-                const ctr = ((data.clicks / data.impressions) * 100).toFixed(2);
-                const avgCpc = (data.budget / data.clicks).toFixed(2);
+        // Aggiorna tabella
+        function updateTable() {
+            const tbody = document.getElementById('clientTable');
+            tbody.innerHTML = '';
+
+            Object.keys(clientData).forEach(client => {
+                const data = clientData[client];
+                const row = tbody.insertRow();
                 
-                const clientCard = document.createElement('div');
-                clientCard.className = 'client-card bg-white p-6 rounded-lg shadow fade-in';
-                clientCard.style.borderLeftColor = clientColors[client] || '#3B82F6';
-                
-                clientCard.innerHTML = `
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-bold text-gray-900">${client}</h3>
-                        <div class="w-4 h-4 rounded-full" style="background-color: ${clientColors[client] || '#3B82F6'}"></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="text-center p-3 bg-gray-50 rounded">
-                            <p class="text-2xl font-bold text-blue-600">€${data.budget.toFixed(2)}</p>
-                            <p class="text-sm text-gray-600">Budget Speso</p>
-                        </div>
-                        <div class="text-center p-3 bg-gray-50 rounded">
-                            <p class="text-2xl font-bold text-green-600">${data.clicks.toLocaleString()}</p>
-                            <p class="text-sm text-gray-600">Clic</p>
-                        </div>
-                        <div class="text-center p-3 bg-gray-50 rounded">
-                            <p class="text-2xl font-bold text-purple-600">${data.impressions.toLocaleString()}</p>
-                            <p class="text-sm text-gray-600">Impressioni</p>
-                        </div>
-                        <div class="text-center p-3 bg-gray-50 rounded">
-                            <p class="text-2xl font-bold text-red-600">${data.conversions}</p>
-                            <p class="text-sm text-gray-600">Conversioni</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 pt-4 border-t border-gray-200">
-                        <div class="flex justify-between text-sm text-gray-600">
-                            <span>CTR: <strong>${ctr}%</strong></span>
-                            <span>CPC Medio: <strong>€${avgCpc}</strong></span>
-                            <span>Campagne: <strong>${data.campaigns}</strong></span>
-                        </div>
-                    </div>
+                row.innerHTML = `
+                    <td class="px-4 py-2 font-medium" style="color: ${clientColors[client]}">${client}</td>
+                    <td class="px-4 py-2 text-right">€${data.budget.toFixed(2)}</td>
+                    <td class="px-4 py-2 text-right">${data.clicks.toLocaleString()}</td>
+                    <td class="px-4 py-2 text-right">${data.impressions.toLocaleString()}</td>
+                    <td class="px-4 py-2 text-right">€${data.avgCpc.toFixed(3)}</td>
+                    <td class="px-4 py-2 text-right">${data.conversions.toFixed(1)}</td>
                 `;
-                
-                clientDetails.appendChild(clientCard);
             });
         }
 
-        function applyFilters() {
-            const clientFilter = document.getElementById('clientFilter').value;
-            const campaignFilter = document.getElementById('campaignFilter').value;
-            const dateFilter = document.getElementById('dateFilter').value;
-            
-            let filteredData = allData;
-            
-            if (clientFilter) {
-                filteredData = filteredData.filter(item => item.cliente === clientFilter);
+        // Carica dati
+        async function loadData() {
+            try {
+                // Cache busting
+                const url = SHEETS_URL + '&_=' + Date.now();
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Errore nel caricamento dei dati');
+                }
+                
+                const csvText = await response.text();
+                const csvData = parseCSV(csvText);
+                
+                processData(csvData);
+                updateKPIs();
+                updateTable();
+                
+                // Crea grafici
+                createPieChart('budgetChart', 'Budget per Cliente', 'budget');
+                createPieChart('clicksChart', 'Clic per Cliente', 'clicks');
+                createPieChart('impressionsChart', 'Impressioni per Cliente', 'impressions');
+                createBarChart();
+                
+                // Aggiorna timestamp
+                document.getElementById('lastUpdate').textContent = 'Ultimo aggiornamento: ' + new Date().toLocaleString('it-IT');
+                
+            } catch (error) {
+                console.error('Errore:', error);
+                document.getElementById('lastUpdate').textContent = 'Errore nel caricamento dati: ' + error.message;
+            } finally {
+                document.getElementById('loadingIndicator').style.display = 'none';
             }
-            
-            if (campaignFilter) {
-                filteredData = filteredData.filter(item => item.campagna === campaignFilter);
-            }
-            
-            if (dateFilter) {
-                filteredData = filteredData.filter(item => item.data === dateFilter);
-            }
-            
-            // Update charts with filtered data
-            const originalData = allData;
-            allData = filteredData;
-            
-            updateKPIs();
-            createCharts();
-            createClientDetails();
-            
-            allData = originalData;
         }
+
+        // Inizializza al caricamento della pagina
+        window.addEventListener('load', loadData);
     </script>
 </body>
 </html>
     <script id="html_badge_script1">
         window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
-            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDk0SYq2gJ23Cla%2FW7U4n4aZF3mLJtXo0GQdjA6TnuGssYAQjxKp6Tc2VDpJYQ2Els1c5EnUfgTlDNEk5V7toKizfmTtblI5ho5FYgXEl4rN5YkBVX9gmERttdWQDiWlwFLupUivNDL5inzzKt7sYpHU8JTiyb3tasUeHBBmUy4%2FwilZ3O4cycXCvkIQcwojRcYEcfI3DC156TNbV6hkPgveRqiU1XbVElEzVVmfxtBUwwr3xnWeZUT4FPRyviBDvBvHJhuoZ1Ur%2FrXhkbIReRrjOuACZwG0c2zt1L0J4W1dh9VFUjB4UeCgZsVUk0UuWO8Hooe8aD6yj85gXFnr8e7TGRqR6kBo6AcSM0K5VljsmG8UnKc1hfaPi0ZSgyKNBtJdxsy3tTVYqInF09nj7m7upb0AL5nyd2A8OLI9QHYXUD8Pki0tV65pMoub8TVy2UDGfHe6LgoOAkdomhvAeRpH29PqP1eKrIozcvBD8xDX89rZSl1negZPOojZv%2BFWRMrt3SeQyfN1iH0nZE5pY%2FnA%3D";
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDpmYBvmYRF8dsrA4bm6xJn8YoVNH7tnPfCZCy1QvQJJ4F7POgxQ5bWBeKhXfKm8dzJDGbvsQaPbARJ9K3SdMUZofDCwBnTUUuYELat4BmAm7prMRJOdIGjwMK%2BrK09hFmUE%2Ft0BMgkdcn1nSLjnP7WOUcXwwZjSZ546SghSFlzODESVDXjhoTYOTBVTGbfyYf1JeNgNnxLK4YNI4X7UW%2FqfLz6m%2B1jWa%2FwRHoK7r%2F35SDtu8twtmBp%2B5Z91dTh0gqWzya0wbHXe5h6iu9OouILeauTaltrmvgBtnE0ro%2F3svX9e44hcz6rvlKr%2Fk8DPx64Dus24uW2EUf8pU%2BJlORXqEG%2FFiRx8Irqu%2BOlBzE8LUZfhxQcloSw5d44609q5rPlZ%2FRGRDt6dS7AIPASXXieSN9oJPdK8%2BBGf7d6QFx%2FUmfJd%2FUPU7q%2BXG8kuEb7Y9sf5g2rVTOWsOZsUpC7As7TyO76qf2F6FFaFM8iLsDF8rStsIxgptsUPCt%2B0YVZOjtj%2BR2PL4sXlC4LkqyO6MnXo%3D";
         window.__genspark_locale = "it-IT";
-        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDk0SYq2gJ23Cla/W7U4n4aZF3mLJtXo0GQdjA6TnuGssYAQjxKp6Tc2VDpJYQ2Els1c5EnUfgTlDNEk5V7toKizfmTtblI5ho5FYgXEl4rN5YkBVX9gmERttdWQDiWlwFLupUivNDL5inzzKt7sYpHU8JTiyb3tasUeHBBmUy4/wilZ3O4cycXCvkIQcwojRcYEcfI3DC156TNbV6hkPgveRqiU1XbVElEzVVmfxtBUwwr3xnWeZUT4FPRyviBDvBvHJhuoZ1Ur/rXhkbIReRrjOuACZwG0c2zt1L0J4W1dh9VFUjB4UeCgZsVUk0UuWO8Hooe8aD6yj85gXFnr8e7TGRqR6kBo6AcSM0K5VljsmG8UnKc1hfaPi0ZSgyKNBtJdxsy3tTVYqInF09nj7m7upb0AL5nyd2A8OLI9QHYXUD8Pki0tV65pMoub8TVy2UDGfHe6LgoOAkdomhvAeRpH29PqP1eKrIozcvBD8xDX89rZSl1negZPOojZv+FWRMrt3SeQyfN1iH0nZE5pY/nA=";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDpmYBvmYRF8dsrA4bm6xJn8YoVNH7tnPfCZCy1QvQJJ4F7POgxQ5bWBeKhXfKm8dzJDGbvsQaPbARJ9K3SdMUZofDCwBnTUUuYELat4BmAm7prMRJOdIGjwMK+rK09hFmUE/t0BMgkdcn1nSLjnP7WOUcXwwZjSZ546SghSFlzODESVDXjhoTYOTBVTGbfyYf1JeNgNnxLK4YNI4X7UW/qfLz6m+1jWa/wRHoK7r/35SDtu8twtmBp+5Z91dTh0gqWzya0wbHXe5h6iu9OouILeauTaltrmvgBtnE0ro/3svX9e44hcz6rvlKr/k8DPx64Dus24uW2EUf8pU+JlORXqEG/FiRx8Irqu+OlBzE8LUZfhxQcloSw5d44609q5rPlZ/RGRDt6dS7AIPASXXieSN9oJPdK8+BGf7d6QFx/UmfJd/UPU7q+XG8kuEb7Y9sf5g2rVTOWsOZsUpC7As7TyO76qf2F6FFaFM8iLsDF8rStsIxgptsUPCt+0YVZOjtj+R2PL4sXlC4LkqyO6MnXo=";
     </script>
     
     <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
